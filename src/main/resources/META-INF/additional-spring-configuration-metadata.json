@@ -1,0 +1,67 @@
+{"properties": [
+  {
+    "name": "admin.*",
+    "type": "java.lang.String",
+    "description": "A description for 'admin.email'"
+  },
+  {
+    "name": "admin.email",
+    "type": "java.lang.String",
+    "description": "A description for 'admin.email'"
+  },
+  {
+    "name": "admin.password",
+    "type": "java.lang.String",
+    "description": "A description for 'admin.password'"
+  },
+  {
+    "name": "admin.lastname",
+    "type": "java.lang.String",
+    "description": "A description for 'admin.lastname'"
+  },
+  {
+    "name": "admin.firstname",
+    "type": "java.lang.String",
+    "description": "A description for 'admin.firstname'"
+  },
+  {
+    "name": "admin.birthcountry",
+    "type": "java.lang.String",
+    "description": "A description for 'admin.birthcountry'"
+  },
+  {
+    "name": "admin.birthdate",
+    "type": "java.lang.String",
+    "description": "A description for 'admin.birthdate'"
+  },
+  {
+    "name": "admin.address",
+    "type": "java.lang.String",
+    "description": "A description for 'admin.address'"
+  },
+  {
+    "name": "admin.phone",
+    "type": "java.lang.String",
+    "description": "A description for 'admin.phone'"
+  },
+  {
+    "name": "jwt.issuer",
+    "type": "java.lang.String",
+    "description": "A description for 'jwt.issuer'"
+  },
+  {
+    "name": "jwt.secret",
+    "type": "java.lang.String",
+    "description": "A description for 'jwt.secret'"
+  },
+  {
+    "name": "application.baseUrl",
+    "type": "java.lang.String",
+    "description": "A description for 'application.baseUrl'"
+  },
+  {
+    "name": "jwt.expiration",
+    "type": "java.lang.String",
+    "description": "A description for 'jwt.expiration'"
+  }
+]}
