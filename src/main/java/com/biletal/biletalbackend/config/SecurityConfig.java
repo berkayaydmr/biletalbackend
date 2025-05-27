@@ -28,6 +28,7 @@ public class SecurityConfig {
     
     private static final String[] AUTH_WHITELIST = {
         // -- Swagger UI v3 (OpenAPI)
+        "/v3/api-docs",
         "/v3/api-docs/**",
         "/swagger-ui/**",
         "/swagger-ui.html",
@@ -36,13 +37,13 @@ public class SecurityConfig {
         "/configuration/ui",
         "/configuration/security",
         "/webjars/**",
+        "/favicon.ico",
         "/logo/**",
         // -- Public endpoints
         "/activate",
-
         "/api/users/delete",
         "/api/auth/current-user",
-        "/api/auth/register",  // Added this entry for the register endpoint
+        "/api/auth/register",
         "/api/auth/login",
         "/api/auth/admin/login",
         "/api/set-password",
@@ -65,10 +66,12 @@ public class SecurityConfig {
             )
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class)
+            );
+
+        // JWT filtresi sadece korumalı endpointlerde çalışsın
+        http.addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterAfter(securityLoggingFilter, UsernamePasswordAuthenticationFilter.class);
-        
+
         return http.build();
     }
     

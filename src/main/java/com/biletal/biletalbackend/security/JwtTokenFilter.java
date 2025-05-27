@@ -36,6 +36,15 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain chain) throws ServletException, IOException {
         
+        // Skip JWT validation for public endpoints (including Swagger)
+        String requestPath = request.getRequestURI();
+        System.out.println("JWT Filter - Request Path: " + requestPath + ", Is Public: " + isPublicEndpoint(requestPath));
+        
+        if (isPublicEndpoint(requestPath)) {
+            chain.doFilter(request, response);
+            return;
+        }
+        
         // Get authorization header
         final String header = request.getHeader(HttpHeaders.AUTHORIZATION);
         
@@ -75,5 +84,22 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         }
         
         chain.doFilter(request, response);
+    }
+    
+    private boolean isPublicEndpoint(String requestPath) {
+        return requestPath.equals("/v3/api-docs") ||
+               requestPath.startsWith("/v3/api-docs/") ||
+               requestPath.startsWith("/swagger-ui") ||
+               requestPath.equals("/swagger-ui.html") ||
+               requestPath.startsWith("/swagger-resources") ||
+               requestPath.startsWith("/webjars") ||
+               requestPath.startsWith("/configuration") ||
+               requestPath.equals("/favicon.ico") ||
+               requestPath.equals("/activate") ||
+               requestPath.equals("/api/auth/register") ||
+               requestPath.equals("/api/auth/login") ||
+               requestPath.equals("/api/auth/admin/login") ||
+               requestPath.equals("/api/set-password") ||
+               requestPath.equals("/api/logout");
     }
 }
