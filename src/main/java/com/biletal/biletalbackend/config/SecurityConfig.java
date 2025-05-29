@@ -47,7 +47,12 @@ public class SecurityConfig {
         "/api/auth/login",
         "/api/auth/admin/login",
         "/api/set-password",
-        "/api/logout"
+        "/api/logout",
+        "/api/auth/forgot-password",
+        "/api/auth/reset-password",
+        "/login",
+        "/reset-password",
+        "/"
     };
     
     public SecurityConfig(JwtTokenFilter jwtTokenFilter, SecurityLoggingFilter securityLoggingFilter) {

@@ -100,6 +100,11 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                requestPath.equals("/api/auth/login") ||
                requestPath.equals("/api/auth/admin/login") ||
                requestPath.equals("/api/set-password") ||
-               requestPath.equals("/api/logout");
+               requestPath.equals("/api/logout") ||
+               requestPath.equals("/api/auth/forgot-password") ||
+               requestPath.equals("/api/auth/reset-password") ||
+               requestPath.equals("/login") ||
+               requestPath.equals("/reset-password") ||
+               requestPath.equals("/");
     }
 }
