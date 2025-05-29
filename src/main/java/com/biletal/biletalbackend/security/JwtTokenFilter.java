@@ -41,6 +41,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         System.out.println("JWT Filter - Request Path: " + requestPath + ", Is Public: " + isPublicEndpoint(requestPath));
         
         if (isPublicEndpoint(requestPath)) {
+            System.out.println("Public endpoint detected, bypassing authentication: " + requestPath);
             chain.doFilter(request, response);
             return;
         }
@@ -50,7 +51,9 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         
         // Check if header is missing or doesn't start with "Bearer "
         if (header == null || !header.startsWith("Bearer ")) {
-            chain.doFilter(request, response);
+            System.out.println("No Authorization header or invalid format for: " + requestPath);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Yetkilendirme başlığı gerekli");
             return;
         }
         
@@ -87,24 +90,46 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     }
     
     private boolean isPublicEndpoint(String requestPath) {
-        return requestPath.equals("/v3/api-docs") ||
-               requestPath.startsWith("/v3/api-docs/") ||
-               requestPath.startsWith("/swagger-ui") ||
-               requestPath.equals("/swagger-ui.html") ||
-               requestPath.startsWith("/swagger-resources") ||
-               requestPath.startsWith("/webjars") ||
-               requestPath.startsWith("/configuration") ||
-               requestPath.equals("/favicon.ico") ||
-               requestPath.equals("/activate") ||
-               requestPath.equals("/api/auth/register") ||
-               requestPath.equals("/api/auth/login") ||
-               requestPath.equals("/api/auth/admin/login") ||
-               requestPath.equals("/api/set-password") ||
-               requestPath.equals("/api/logout") ||
-               requestPath.equals("/api/auth/forgot-password") ||
-               requestPath.equals("/api/auth/reset-password") ||
-               requestPath.equals("/login") ||
-               requestPath.equals("/reset-password") ||
-               requestPath.equals("/");
+        // Swagger ve API docs
+        if (requestPath.equals("/v3/api-docs") ||
+            requestPath.startsWith("/v3/api-docs/") ||
+            requestPath.startsWith("/swagger-ui") ||
+            requestPath.equals("/swagger-ui.html") ||
+            requestPath.startsWith("/swagger-resources") ||
+            requestPath.startsWith("/webjars") ||
+            requestPath.startsWith("/configuration") ||
+            requestPath.equals("/favicon.ico")) {
+            return true;
+        }
+        
+        // Public endpoints - Auth ve kullanıcı
+        if (requestPath.equals("/activate") ||
+            requestPath.equals("/api/users/delete") ||
+            requestPath.equals("/api/auth/current-user") ||
+            requestPath.equals("/api/auth/register") ||
+            requestPath.equals("/api/auth/login") ||
+            requestPath.equals("/api/auth/admin/login") ||
+            requestPath.equals("/api/set-password") ||
+            requestPath.equals("/api/logout") ||
+            requestPath.equals("/api/auth/forgot-password") ||
+            requestPath.equals("/api/auth/reset-password") ||
+            requestPath.equals("/login") ||
+            requestPath.equals("/reset-password") ||
+            requestPath.equals("/")) {
+            return true;
+        }
+        
+        // Public endpoints - Uçuşlar
+        if (requestPath.equals("/api/flights/search") ||
+            requestPath.equals("/api/flights/available")) {
+            return true;
+        }
+        
+        // H2 Console (test için)
+        if (requestPath.startsWith("/h2-console/")) {
+            return true;
+        }
+        
+        return false;
     }
 }

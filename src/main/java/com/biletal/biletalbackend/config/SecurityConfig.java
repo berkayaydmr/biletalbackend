@@ -52,7 +52,12 @@ public class SecurityConfig {
         "/api/auth/reset-password",
         "/login",
         "/reset-password",
-        "/"
+        "/",
+        // -- Flight public endpoints
+        "/api/flights/search",
+        "/api/flights/available",
+        // -- H2 Console (for testing)
+        "/h2-console/**"
     };
     
     public SecurityConfig(JwtTokenFilter jwtTokenFilter, SecurityLoggingFilter securityLoggingFilter) {
@@ -65,6 +70,8 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
+            .headers(headers -> headers
+                .frameOptions(frameOptions -> frameOptions.disable())) // H2 Console için
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(AUTH_WHITELIST).permitAll()
                 .anyRequest().authenticated()
