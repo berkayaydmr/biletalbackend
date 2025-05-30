@@ -4,6 +4,7 @@ import com.biletal.biletalbackend.security.JwtTokenFilter;
 import com.biletal.biletalbackend.security.SecurityLoggingFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -53,9 +54,15 @@ public class SecurityConfig {
         "/login",
         "/reset-password",
         "/",
-        // -- Flight public endpoints
+        // -- Flight public endpoints (GET operations)
+        "/api/flights",
         "/api/flights/search",
-        "/api/flights/available",
+        "/api/flights/available", 
+        "/api/flights/paginated",
+        "/api/flights/search/all",
+        "/api/flights/route",
+        "/api/flights/airline", 
+        "/api/flights/time-range",
         // -- H2 Console (for testing)
         "/h2-console/**"
     };
@@ -74,6 +81,7 @@ public class SecurityConfig {
                 .frameOptions(frameOptions -> frameOptions.disable())) // H2 Console için
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(AUTH_WHITELIST).permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/flights/*").permitAll() // Allow GET requests to individual flights
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session

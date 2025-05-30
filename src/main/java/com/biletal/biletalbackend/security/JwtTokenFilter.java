@@ -38,10 +38,11 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         
         // Skip JWT validation for public endpoints (including Swagger)
         String requestPath = request.getRequestURI();
-        System.out.println("JWT Filter - Request Path: " + requestPath + ", Is Public: " + isPublicEndpoint(requestPath));
+        String method = request.getMethod();
+        System.out.println("JWT Filter - Request Path: " + requestPath + ", Method: " + method + ", Is Public: " + isPublicEndpoint(requestPath, method));
         
-        if (isPublicEndpoint(requestPath)) {
-            System.out.println("Public endpoint detected, bypassing authentication: " + requestPath);
+        if (isPublicEndpoint(requestPath, method)) {
+            System.out.println("Public endpoint detected, bypassing authentication: " + method + " " + requestPath);
             chain.doFilter(request, response);
             return;
         }
@@ -89,7 +90,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
     
-    private boolean isPublicEndpoint(String requestPath) {
+    private boolean isPublicEndpoint(String requestPath, String method) {
         // Swagger ve API docs
         if (requestPath.equals("/v3/api-docs") ||
             requestPath.startsWith("/v3/api-docs/") ||
@@ -119,9 +120,17 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             return true;
         }
         
-        // Public endpoints - Uçuşlar
-        if (requestPath.equals("/api/flights/search") ||
-            requestPath.equals("/api/flights/available")) {
+        // Public endpoints - Uçuşlar (ONLY GET operations are public)
+        if ("GET".equals(method) && (
+            requestPath.equals("/api/flights") ||
+            requestPath.equals("/api/flights/search") ||
+            requestPath.equals("/api/flights/available") ||
+            requestPath.equals("/api/flights/paginated") ||
+            requestPath.equals("/api/flights/search/all") ||
+            requestPath.equals("/api/flights/route") ||
+            requestPath.equals("/api/flights/airline") ||
+            requestPath.equals("/api/flights/time-range") ||
+            requestPath.matches("/api/flights/\\d+"))) { // Individual flight by ID (e.g., /api/flights/1)
             return true;
         }
         
