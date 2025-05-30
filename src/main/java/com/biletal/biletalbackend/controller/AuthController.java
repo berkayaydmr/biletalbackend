@@ -2,13 +2,17 @@ package com.biletal.biletalbackend.controller;
 
 import com.biletal.biletalbackend.dto.AdminUpdateRequest;
 import com.biletal.biletalbackend.dto.ApiResponseDto;
+import com.biletal.biletalbackend.dto.ForgotPasswordRequest;
 import com.biletal.biletalbackend.dto.LoginRequest;
 import com.biletal.biletalbackend.dto.LoginResponse;
 import com.biletal.biletalbackend.dto.PasswordRequest;
 import com.biletal.biletalbackend.dto.RegistrationRequest;
+import com.biletal.biletalbackend.dto.ResetPasswordRequest;
 import com.biletal.biletalbackend.dto.UserResponseDto;
+import com.biletal.biletalbackend.model.PasswordResetToken;
 import com.biletal.biletalbackend.model.RegistrationToken;
 import com.biletal.biletalbackend.model.User;
+import com.biletal.biletalbackend.repository.PasswordResetTokenRepository;
 import com.biletal.biletalbackend.repository.RegistrationTokenRepository;
 import com.biletal.biletalbackend.security.JwtService;
 import com.biletal.biletalbackend.service.AuthService;
@@ -52,11 +56,13 @@ public class AuthController {
     private final AuthService authService;
     private final JwtService jwtService;
     private final RegistrationTokenRepository tokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
-    public AuthController(AuthService authService, JwtService jwtService, RegistrationTokenRepository tokenRepository) {
+    public AuthController(AuthService authService, JwtService jwtService, RegistrationTokenRepository tokenRepository, PasswordResetTokenRepository passwordResetTokenRepository) {
         this.authService = authService;
         this.jwtService = jwtService;
         this.tokenRepository = tokenRepository;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
     }
 
     @Operation(summary = "Activate user account", description = "Activates a user account using a registration token")
@@ -90,6 +96,50 @@ public class AuthController {
         model.addAttribute("email", registrationToken.getEmail());
         
         return "activate";
+    }
+    
+    @Operation(summary = "Reset password page", description = "Shows password reset page for valid tokens")
+    @GetMapping("/reset-password")
+    public String resetPasswordPage(@RequestParam String token, Model model) {
+        Optional<PasswordResetToken> tokenOptional = passwordResetTokenRepository.findByToken(token);
+        
+        if (tokenOptional.isEmpty()) {
+            model.addAttribute("success", false);
+            model.addAttribute("message", "Geçersiz şifre sıfırlama bağlantısı.");
+            return "reset-password";
+        }
+        
+        PasswordResetToken resetToken = tokenOptional.get();
+        
+        if (resetToken.isExpired()) {
+            model.addAttribute("success", false);
+            model.addAttribute("message", "Şifre sıfırlama bağlantısının süresi dolmuştur. Lütfen yeni bir bağlantı talep edin.");
+            return "reset-password";
+        }
+        
+        if (resetToken.isUsed()) {
+            model.addAttribute("success", false);
+            model.addAttribute("message", "Bu şifre sıfırlama bağlantısı daha önce kullanılmıştır.");
+            return "reset-password";
+        }
+        
+        // Show success page with form to reset password
+        model.addAttribute("success", true);
+        model.addAttribute("token", token);
+        model.addAttribute("email", resetToken.getEmail());
+        
+        return "reset-password";
+    }
+    
+    @Operation(summary = "Login page", description = "Shows login page")
+    @GetMapping("/login")
+    public String loginPage() {
+        return "login";
+    }
+    
+    @GetMapping("/")
+    public String homePage() {
+        return "redirect:/login";
     }
 
     @Operation(summary = "Update admin account", description = "Updates an admin account's information")
@@ -283,5 +333,44 @@ public class AuthController {
         });
         
         return new com.biletal.biletalbackend.dto.ApiResponseDto("Doğrulama hataları: " + errors, false);
+    }
+    
+    @Operation(summary = "Forgot Password", description = "Send password reset link to user's email")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Password reset email sent successfully"),
+        @ApiResponse(responseCode = "404", description = "Email not found"),
+        @ApiResponse(responseCode = "409", description = "Valid reset token already exists")
+    })
+    @PostMapping("/api/auth/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        try {
+            Map<String, String> result = authService.forgotPassword(request.getEmail());
+            return ResponseEntity.ok(new ApiResponseDto(result.get("message"), true));
+        } catch (RuntimeException e) {
+            HttpStatus status = e.getMessage().contains("bulunamadı") ? HttpStatus.NOT_FOUND : HttpStatus.CONFLICT;
+            return ResponseEntity
+                .status(status)
+                .body(new ApiResponseDto(e.getMessage(), false));
+        }
+    }
+    
+    @Operation(summary = "Reset Password", description = "Reset user password using reset token")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Password reset successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid token or password validation failed"),
+        @ApiResponse(responseCode = "410", description = "Token expired or already used")
+    })
+    @PostMapping("/api/auth/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        try {
+            Map<String, String> result = authService.resetPassword(request);
+            return ResponseEntity.ok(new ApiResponseDto(result.get("message"), true));
+        } catch (RuntimeException e) {
+            HttpStatus status = e.getMessage().contains("süresi dolmuş") || e.getMessage().contains("zaten kullanılmış") 
+                ? HttpStatus.GONE : HttpStatus.BAD_REQUEST;
+            return ResponseEntity
+                .status(status)
+                .body(new ApiResponseDto(e.getMessage(), false));
+        }
     }
 }

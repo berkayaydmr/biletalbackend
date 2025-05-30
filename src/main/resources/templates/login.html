@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giriş Yap - Bilet Al</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .logo {
+            margin-bottom: 30px;
+        }
+
+        .logo img {
+            height: 80px;
+            width: auto;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .forgot-password {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .forgot-password a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+
+        .divider {
+            margin: 20px 0;
+            text-align: center;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <img src="/static/logo/bilet-al-mavi-logo-yatay.png" alt="Bilet Al Logo">
+        </div>
+        
+        <h1>Giriş Yap</h1>
+        
+        <div class="alert alert-danger" id="loginError"></div>
+        <div class="alert alert-success" id="loginSuccess"></div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">E-posta</label>
+                <input type="email" class="form-control" id="email" placeholder="E-posta adresinizi girin" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Şifre</label>
+                <input type="password" class="form-control" id="password" placeholder="Şifrenizi girin" required>
+            </div>
+            
+            <button type="submit" class="button">Giriş Yap</button>
+        </form>
+        
+        <div class="forgot-password">
+            <a href="#" id="forgotPasswordLink">Şifremi Unuttum</a>
+        </div>
+        
+        <div class="divider">veya</div>
+        
+        <div style="text-align: center;">
+            <a href="#" style="color: #667eea; text-decoration: none;">Hesap Oluştur</a>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgotPasswordModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 10px; max-width: 400px; width: 90%;">
+            <h2 style="margin-bottom: 20px; color: #333;">Şifremi Unuttum</h2>
+            <p style="margin-bottom: 20px; color: #666;">E-posta adresinizi girin, size şifre sıfırlama bağlantısı gönderelim.</p>
+            
+            <div class="alert alert-danger" id="forgotError"></div>
+            <div class="alert alert-success" id="forgotSuccess"></div>
+            
+            <form id="forgotPasswordForm">
+                <div class="form-group">
+                    <label for="forgotEmail">E-posta</label>
+                    <input type="email" class="form-control" id="forgotEmail" placeholder="E-posta adresinizi girin" required>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="button" style="flex: 1;">Gönder</button>
+                    <button type="button" class="button" id="cancelForgot" style="flex: 1; background: #6c757d;">İptal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // Login form handling
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            var loginError = document.getElementById('loginError');
+            var loginSuccess = document.getElementById('loginSuccess');
+            var email = document.getElementById('email').value;
+            var password = document.getElementById('password').value;
+            
+            // Reset messages
+            loginError.style.display = 'none';
+            loginSuccess.style.display = 'none';
+            
+            // Send login request
+            fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.token) {
+                    loginSuccess.textContent = 'Giriş başarılı! Yönlendiriliyorsunuz...';
+                    loginSuccess.style.display = 'block';
+                    // Store token and redirect
+                    localStorage.setItem('token', data.token);
+                    setTimeout(function() {
+                        window.location.href = '/dashboard';
+                    }, 1500);
+                } else {
+                    loginError.textContent = data.message || 'Giriş başarısız!';
+                    loginError.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                loginError.textContent = 'Bir hata oluştu. Lütfen tekrar deneyin.';
+                loginError.style.display = 'block';
+                console.error('Error:', error);
+            });
+        });
+
+        // Forgot password modal handling
+        document.getElementById('forgotPasswordLink').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('forgotPasswordModal').style.display = 'block';
+        });
+
+        document.getElementById('cancelForgot').addEventListener('click', function() {
+            document.getElementById('forgotPasswordModal').style.display = 'none';
+            document.getElementById('forgotPasswordForm').reset();
+            document.getElementById('forgotError').style.display = 'none';
+            document.getElementById('forgotSuccess').style.display = 'none';
+        });
+
+        // Forgot password form handling
+        document.getElementById('forgotPasswordForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            var forgotError = document.getElementById('forgotError');
+            var forgotSuccess = document.getElementById('forgotSuccess');
+            var email = document.getElementById('forgotEmail').value;
+            
+            // Reset messages
+            forgotError.style.display = 'none';
+            forgotSuccess.style.display = 'none';
+            
+            // Send forgot password request
+            fetch('/api/auth/forgot-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: email
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    forgotSuccess.textContent = data.message;
+                    forgotSuccess.style.display = 'block';
+                    setTimeout(function() {
+                        document.getElementById('forgotPasswordModal').style.display = 'none';
+                        document.getElementById('forgotPasswordForm').reset();
+                        forgotSuccess.style.display = 'none';
+                    }, 3000);
+                } else {
+                    forgotError.textContent = data.message;
+                    forgotError.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                forgotError.textContent = 'Bir hata oluştu. Lütfen tekrar deneyin.';
+                forgotError.style.display = 'block';
+                console.error('Error:', error);
+            });
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('forgotPasswordModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+                document.getElementById('forgotPasswordForm').reset();
+                document.getElementById('forgotError').style.display = 'none';
+                document.getElementById('forgotSuccess').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

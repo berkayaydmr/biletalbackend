@@ -4,6 +4,7 @@ import com.biletal.biletalbackend.security.JwtTokenFilter;
 import com.biletal.biletalbackend.security.SecurityLoggingFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -28,6 +29,7 @@ public class SecurityConfig {
     
     private static final String[] AUTH_WHITELIST = {
         // -- Swagger UI v3 (OpenAPI)
+        "/v3/api-docs",
         "/v3/api-docs/**",
         "/swagger-ui/**",
         "/swagger-ui.html",
@@ -36,17 +38,42 @@ public class SecurityConfig {
         "/configuration/ui",
         "/configuration/security",
         "/webjars/**",
+        "/favicon.ico",
         "/logo/**",
         // -- Public endpoints
         "/activate",
-
         "/api/users/delete",
         "/api/auth/current-user",
-        "/api/auth/register",  // Added this entry for the register endpoint
+        "/api/auth/register",
         "/api/auth/login",
         "/api/auth/admin/login",
         "/api/set-password",
-        "/api/logout"
+        "/api/logout",
+        "/api/auth/forgot-password",
+        "/api/auth/reset-password",
+        "/login",
+        "/reset-password",
+        "/",
+        // -- Flight public endpoints (GET operations)
+        "/api/flights",
+        "/api/flights/search",
+        "/api/flights/available", 
+        "/api/flights/paginated",
+        "/api/flights/search/all",
+        "/api/flights/route",
+        "/api/flights/airline", 
+        "/api/flights/time-range",
+        // -- Bus Expedition public endpoints (GET operations)
+        "/api/bus-expeditions",
+        "/api/bus-expeditions/search",
+        "/api/bus-expeditions/available", 
+        "/api/bus-expeditions/paginated",
+        "/api/bus-expeditions/search/all",
+        "/api/bus-expeditions/route",
+        "/api/bus-expeditions/company", 
+        "/api/bus-expeditions/time-range",
+        // -- H2 Console (for testing)
+        "/h2-console/**"
     };
     
     public SecurityConfig(JwtTokenFilter jwtTokenFilter, SecurityLoggingFilter securityLoggingFilter) {
@@ -59,16 +86,22 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
+            .headers(headers -> headers
+                .frameOptions(frameOptions -> frameOptions.disable())) // H2 Console için
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(AUTH_WHITELIST).permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/flights/*").permitAll() // Allow GET requests to individual flights
+                .requestMatchers(HttpMethod.GET, "/api/bus-expeditions/*").permitAll() // Allow GET requests to individual bus expeditions
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class)
+            );
+
+        // JWT filtresi sadece korumalı endpointlerde çalışsın
+        http.addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterAfter(securityLoggingFilter, UsernamePasswordAuthenticationFilter.class);
-        
+
         return http.build();
     }
     

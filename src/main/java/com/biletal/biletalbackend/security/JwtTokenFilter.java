@@ -36,12 +36,25 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain chain) throws ServletException, IOException {
         
+        // Skip JWT validation for public endpoints (including Swagger)
+        String requestPath = request.getRequestURI();
+        String method = request.getMethod();
+        System.out.println("JWT Filter - Request Path: " + requestPath + ", Method: " + method + ", Is Public: " + isPublicEndpoint(requestPath, method));
+        
+        if (isPublicEndpoint(requestPath, method)) {
+            System.out.println("Public endpoint detected, bypassing authentication: " + method + " " + requestPath);
+            chain.doFilter(request, response);
+            return;
+        }
+        
         // Get authorization header
         final String header = request.getHeader(HttpHeaders.AUTHORIZATION);
         
         // Check if header is missing or doesn't start with "Bearer "
         if (header == null || !header.startsWith("Bearer ")) {
-            chain.doFilter(request, response);
+            System.out.println("No Authorization header or invalid format for: " + requestPath);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Yetkilendirme başlığı gerekli");
             return;
         }
         
@@ -75,5 +88,85 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         }
         
         chain.doFilter(request, response);
+    }
+    
+    private boolean isPublicEndpoint(String requestPath, String method) {
+        // Swagger ve API docs
+        if (requestPath.equals("/v3/api-docs") ||
+            requestPath.startsWith("/v3/api-docs/") ||
+            requestPath.startsWith("/swagger-ui") ||
+            requestPath.equals("/swagger-ui.html") ||
+            requestPath.startsWith("/swagger-resources") ||
+            requestPath.startsWith("/webjars") ||
+            requestPath.startsWith("/configuration") ||
+            requestPath.equals("/favicon.ico")) {
+            return true;
+        }
+        
+        // Public endpoints - Auth ve kullanıcı
+        if (requestPath.equals("/activate") ||
+            requestPath.equals("/api/users/delete") ||
+            requestPath.equals("/api/auth/current-user") ||
+            requestPath.equals("/api/auth/register") ||
+            requestPath.equals("/api/auth/login") ||
+            requestPath.equals("/api/auth/admin/login") ||
+            requestPath.equals("/api/set-password") ||
+            requestPath.equals("/api/logout") ||
+            requestPath.equals("/api/auth/forgot-password") ||
+            requestPath.equals("/api/auth/reset-password") ||
+            requestPath.equals("/login") ||
+            requestPath.equals("/reset-password") ||
+            requestPath.equals("/")) {
+            return true;
+        }
+        
+        // Public endpoints - Uçuşlar (ONLY GET operations are public)
+        if ("GET".equals(method) && (
+            requestPath.equals("/api/flights") ||
+            requestPath.equals("/api/flights/search") ||
+            requestPath.equals("/api/flights/available") ||
+            requestPath.equals("/api/flights/paginated") ||
+            requestPath.equals("/api/flights/search/all") ||
+            requestPath.equals("/api/flights/route") ||
+            requestPath.equals("/api/flights/airline") ||
+            requestPath.equals("/api/flights/time-range") ||
+            requestPath.matches("/api/flights/\\d+"))) { // Individual flight by ID (e.g., /api/flights/1)
+            return true;
+        }
+        
+        // Public endpoints - Flight search (POST operations for search are public)
+        if ("POST".equals(method) && (
+            requestPath.equals("/api/flights/search") ||
+            requestPath.equals("/api/flights/search/all"))) {
+            return true;
+        }
+        
+        // Public endpoints - Bus Expeditions (GET operations and specific POST operations are public)
+        if ("GET".equals(method) && (
+            requestPath.equals("/api/bus-expeditions") ||
+            requestPath.equals("/api/bus-expeditions/search") ||
+            requestPath.equals("/api/bus-expeditions/available") ||
+            requestPath.equals("/api/bus-expeditions/paginated") ||
+            requestPath.equals("/api/bus-expeditions/search/all") ||
+            requestPath.equals("/api/bus-expeditions/route") ||
+            requestPath.equals("/api/bus-expeditions/company") ||
+            requestPath.equals("/api/bus-expeditions/time-range") ||
+            requestPath.matches("/api/bus-expeditions/\\d+"))) { // Individual bus expedition by ID (e.g., /api/bus-expeditions/1)
+            return true;
+        }
+        
+        // Public endpoints - Bus Expeditions search (POST operations for search are public)
+        if ("POST".equals(method) && (
+            requestPath.equals("/api/bus-expeditions/search") ||
+            requestPath.equals("/api/bus-expeditions/search/all"))) {
+            return true;
+        }
+        
+        // H2 Console (test için)
+        if (requestPath.startsWith("/h2-console/")) {
+            return true;
+        }
+        
+        return false;
     }
 }

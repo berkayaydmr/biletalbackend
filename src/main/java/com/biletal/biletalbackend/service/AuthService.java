@@ -3,13 +3,17 @@ package com.biletal.biletalbackend.service;
 import com.biletal.biletalbackend.custenum.Gender;
 import com.biletal.biletalbackend.custenum.Role;
 import com.biletal.biletalbackend.dto.AdminUpdateRequest;
+import com.biletal.biletalbackend.dto.ForgotPasswordRequest;
 import com.biletal.biletalbackend.dto.LoginRequest;
 import com.biletal.biletalbackend.dto.LoginResponse;
 import com.biletal.biletalbackend.dto.PasswordRequest;
 import com.biletal.biletalbackend.dto.RegistrationRequest;
+import com.biletal.biletalbackend.dto.ResetPasswordRequest;
 import com.biletal.biletalbackend.dto.UserResponseDto;
+import com.biletal.biletalbackend.model.PasswordResetToken;
 import com.biletal.biletalbackend.model.RegistrationToken;
 import com.biletal.biletalbackend.model.User;
+import com.biletal.biletalbackend.repository.PasswordResetTokenRepository;
 import com.biletal.biletalbackend.repository.RegistrationTokenRepository;
 import com.biletal.biletalbackend.repository.UserRepository;
 import com.biletal.biletalbackend.security.JwtService;
@@ -41,6 +45,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JavaMailSender mailSender;
     private final RegistrationTokenRepository tokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     
     @Value("${application.baseUrl}")
     private String baseUrl;
@@ -51,7 +56,8 @@ public class AuthService {
                       TokenWhitelistService tokenWhitelistService,
                       PasswordEncoder passwordEncoder,
                       JavaMailSender mailSender,
-                      RegistrationTokenRepository tokenRepository) {
+                      RegistrationTokenRepository tokenRepository,
+                      PasswordResetTokenRepository passwordResetTokenRepository) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
@@ -59,6 +65,7 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
         this.mailSender = mailSender;
         this.tokenRepository = tokenRepository;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
     }
     
     public LoginResponse authenticateAdmin(LoginRequest request) {
@@ -211,17 +218,26 @@ public class AuthService {
     }
     
     private void sendRegistrationEmail(String email, String token) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(email);
-        message.setSubject("Bilet Al - Hesap Aktivasyonu");
-        message.setText("Merhaba,\n\n" +
-                "Bilet Al'a hoş geldiniz! Hesabınızı aktifleştirmek için lütfen aşağıdaki bağlantıya tıklayın:\n\n" +
-                baseUrl + "/activate?token=" + token + "\n\n" +
-                "Bu bağlantı 24 saat boyunca geçerlidir.\n\n" +
-                "Saygılarımızla,\n" +
-                "Bilet Al Ekibi");
-        
-        mailSender.send(message);
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(email);
+            message.setSubject("Bilet Al - Hesap Aktivasyonu");
+            message.setText("Merhaba,\n\n" +
+                    "Bilet Al'a hoş geldiniz! Hesabınızı aktifleştirmek için lütfen aşağıdaki bağlantıya tıklayın:\n\n" +
+                    baseUrl + "/activate?token=" + token + "\n\n" +
+                    "Bu bağlantı 24 saat boyunca geçerlidir.\n\n" +
+                    "Saygılarımızla,\n" +
+                    "Bilet Al Ekibi");
+            
+            mailSender.send(message);
+            System.out.println("✅ Registration email sent successfully to: " + email);
+        } catch (Exception e) {
+            // Log email details for testing purposes
+            System.out.println("📧 Registration Email Details:");
+            System.out.println("To: " + email);
+            System.out.println("Activation Link: " + baseUrl + "/activate?token=" + token);
+            System.out.println("❌ Email sending failed (using fallback): " + e.getMessage());
+        }
     }
     
     @Transactional
@@ -300,5 +316,114 @@ public class AuthService {
         User updatedAdmin = userRepository.save(admin);
         
         return updatedAdmin;
+    }
+    
+    /**
+     * Send password reset email to user
+     * 
+     * @param email The email address to send reset link to
+     * @return Success message
+     * @throws RuntimeException if email is not found
+     */
+    @Transactional
+    public Map<String, String> forgotPassword(String email) {
+        // Find user by email
+        User user = userRepository.findByEmailAndIsDeletedFalse(email)
+            .orElseThrow(() -> new RuntimeException("Bu e-posta adresi ile kayıtlı kullanıcı bulunamadı"));
+        
+        // Check if there's an existing valid token
+        Optional<PasswordResetToken> existingToken = 
+            passwordResetTokenRepository.findByEmailAndUsedFalseAndExpiryDateAfter(email, LocalDateTime.now());
+        
+        if (existingToken.isPresent()) {
+            throw new RuntimeException("Zaten geçerli bir şifre sıfırlama bağlantınız bulunmaktadır. E-postanızı kontrol edin.");
+        }
+        
+        // Generate new reset token
+        String token = UUID.randomUUID().toString();
+        LocalDateTime expiryDate = LocalDateTime.now().plusHours(1); // Token expires in 1 hour
+        
+        PasswordResetToken resetToken = new PasswordResetToken(token, email, user, expiryDate);
+        passwordResetTokenRepository.save(resetToken);
+        
+        // Send password reset email
+        sendPasswordResetEmail(email, token);
+        
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.");
+        return response;
+    }
+    
+    /**
+     * Reset user password using reset token
+     * 
+     * @param request Reset password request containing token and new password
+     * @return Success message
+     * @throws RuntimeException if token is invalid, expired, or passwords don't match
+     */
+    @Transactional
+    public Map<String, String> resetPassword(ResetPasswordRequest request) {
+        if (request.getPassword() == null || request.getPassword().trim().length() < 6) {
+            throw new RuntimeException("Şifre en az 6 karakter olmalıdır");
+        }
+        
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
+            throw new RuntimeException("Şifreler eşleşmiyor");
+        }
+        
+        // Find and validate token
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(request.getToken())
+            .orElseThrow(() -> new RuntimeException("Geçersiz veya süresi dolmuş şifre sıfırlama bağlantısı"));
+        
+        if (resetToken.isUsed()) {
+            throw new RuntimeException("Bu şifre sıfırlama bağlantısı zaten kullanılmış");
+        }
+        
+        if (resetToken.isExpired()) {
+            throw new RuntimeException("Şifre sıfırlama bağlantısının süresi dolmuş. Yeni bir bağlantı talep edin.");
+        }
+        
+        // Update user's password
+        User user = resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        userRepository.save(user);
+        
+        // Mark token as used
+        resetToken.setUsed(true);
+        passwordResetTokenRepository.save(resetToken);
+        
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Şifreniz başarıyla sıfırlandı. Şimdi yeni şifrenizle giriş yapabilirsiniz.");
+        return response;
+    }
+    
+    /**
+     * Send password reset email
+     * 
+     * @param email Email address to send to
+     * @param token Reset token
+     */
+    private void sendPasswordResetEmail(String email, String token) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(email);
+            message.setSubject("Bilet Al - Şifre Sıfırlama");
+            message.setText("Merhaba,\n\n" +
+                    "Şifre sıfırlama talebiniz alınmıştır. Şifrenizi sıfırlamak için lütfen aşağıdaki bağlantıya tıklayın:\n\n" +
+                    baseUrl + "/reset-password?token=" + token + "\n\n" +
+                    "Bu bağlantı 1 saat boyunca geçerlidir.\n\n" +
+                    "Eğer bu talebi siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz.\n\n" +
+                    "Saygılarımızla,\n" +
+                    "Bilet Al Ekibi");
+            
+            mailSender.send(message);
+            System.out.println("✅ Password reset email sent successfully to: " + email);
+        } catch (Exception e) {
+            // Log email details for testing purposes
+            System.out.println("📧 Password Reset Email Details:");
+            System.out.println("To: " + email);
+            System.out.println("Reset Link: " + baseUrl + "/reset-password?token=" + token);
+            System.out.println("❌ Email sending failed (using fallback): " + e.getMessage());
+        }
     }
 }
