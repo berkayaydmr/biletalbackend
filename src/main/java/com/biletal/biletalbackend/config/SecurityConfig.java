@@ -63,6 +63,15 @@ public class SecurityConfig {
         "/api/flights/route",
         "/api/flights/airline", 
         "/api/flights/time-range",
+        // -- Bus Expedition public endpoints (GET operations)
+        "/api/bus-expeditions",
+        "/api/bus-expeditions/search",
+        "/api/bus-expeditions/available", 
+        "/api/bus-expeditions/paginated",
+        "/api/bus-expeditions/search/all",
+        "/api/bus-expeditions/route",
+        "/api/bus-expeditions/company", 
+        "/api/bus-expeditions/time-range",
         // -- H2 Console (for testing)
         "/h2-console/**"
     };
@@ -82,6 +91,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(AUTH_WHITELIST).permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/flights/*").permitAll() // Allow GET requests to individual flights
+                .requestMatchers(HttpMethod.GET, "/api/bus-expeditions/*").permitAll() // Allow GET requests to individual bus expeditions
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session

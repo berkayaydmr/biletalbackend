@@ -134,6 +134,34 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             return true;
         }
         
+        // Public endpoints - Flight search (POST operations for search are public)
+        if ("POST".equals(method) && (
+            requestPath.equals("/api/flights/search") ||
+            requestPath.equals("/api/flights/search/all"))) {
+            return true;
+        }
+        
+        // Public endpoints - Bus Expeditions (GET operations and specific POST operations are public)
+        if ("GET".equals(method) && (
+            requestPath.equals("/api/bus-expeditions") ||
+            requestPath.equals("/api/bus-expeditions/search") ||
+            requestPath.equals("/api/bus-expeditions/available") ||
+            requestPath.equals("/api/bus-expeditions/paginated") ||
+            requestPath.equals("/api/bus-expeditions/search/all") ||
+            requestPath.equals("/api/bus-expeditions/route") ||
+            requestPath.equals("/api/bus-expeditions/company") ||
+            requestPath.equals("/api/bus-expeditions/time-range") ||
+            requestPath.matches("/api/bus-expeditions/\\d+"))) { // Individual bus expedition by ID (e.g., /api/bus-expeditions/1)
+            return true;
+        }
+        
+        // Public endpoints - Bus Expeditions search (POST operations for search are public)
+        if ("POST".equals(method) && (
+            requestPath.equals("/api/bus-expeditions/search") ||
+            requestPath.equals("/api/bus-expeditions/search/all"))) {
+            return true;
+        }
+        
         // H2 Console (test için)
         if (requestPath.startsWith("/h2-console/")) {
             return true;
