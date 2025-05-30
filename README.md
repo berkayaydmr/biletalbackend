@@ -1,6 +1,46 @@
-This project is a simple implementation of an backend project is a part of a project that allows customers to buy a ticket for transportation. Its named Bilet Al. The project is implemented with Java Spring Boot and Postgresql. Up to planned sprints it will be developed. The sprint plans making by our Işık University Software Development Project course instructor. The first sprint is planned to be completed in 2-3 weeks. First sprint contains features like administrator login, logout, create account, end user login, delete account, edit admin account, edit user account with documanted details. 
+# Bilet Al - Transportation Ticket Booking System
 
-# Bilet Al Backend Project Structure
+Bilet Al is a comprehensive backend system for a transportation ticket booking platform that allows customers to purchase tickets for flights and bus journeys. The project is implemented using **Java Spring Boot 3.4.4** with **PostgreSQL** database and provides a robust, secure, and scalable solution for transportation management.
+
+## 🚀 Technology Stack
+
+- **Framework**: Spring Boot 3.4.4
+- **Language**: Java 17
+- **Database**: PostgreSQL
+- **Security**: JWT (JSON Web Tokens) with role-based authorization
+- **Documentation**: Swagger/OpenAPI 3
+- **Email**: Spring Boot Mail with HTML templates
+- **Build Tool**: Maven
+- **Architecture**: RESTful API with layered architecture
+
+## 📋 Key Features
+
+- **Multi-Modal Transportation**: Support for both flights and bus expeditions
+- **Secure Authentication**: JWT-based authentication with role-based access control
+- **Email Integration**: User registration, activation, and password reset via email
+- **Advanced Search**: Dynamic filtering and pagination using JPA Specifications
+- **Seat Management**: Comprehensive seat reservation system
+- **Admin Panel**: Full administrative control over transportation schedules
+- **Token Management**: Secure token whitelist system for session management
+- **Soft Delete**: Data preservation with soft delete patterns
+
+## 🏗️ System Architecture
+
+The application follows a clean, layered architecture pattern:
+
+```
+┌─────────────────┐
+│   Controllers   │ ← REST API Layer (HTTP requests/responses)
+├─────────────────┤
+│    Services     │ ← Business Logic Layer
+├─────────────────┤
+│  Repositories   │ ← Data Access Layer (JPA/Hibernate)
+├─────────────────┤
+│    Database     │ ← PostgreSQL Database
+└─────────────────┘
+```
+
+## 📦 Project Structure
 ```plaintext
 --com.biletal.biletalbackend
   |-- config
@@ -179,3 +219,380 @@ All API endpoints return responses in a consistent format:
 │            │<─────────────────────│            │
 └────────────┘                      └────────────┘
 ```
+
+```
+src/
+├── main/
+│   ├── java/com/biletal/biletalbackend/
+│   │   ├── BiletalbackendApplication.java      # Main Spring Boot application
+│   │   ├── config/                             # Configuration classes
+│   │   │   ├── DatabaseInitializer.java        # Database seeding
+│   │   │   ├── SecurityConfig.java             # Security configuration
+│   │   │   └── SwaggerConfig.java              # API documentation config
+│   │   ├── controller/                         # REST API controllers
+│   │   │   ├── AuthController.java             # Authentication endpoints
+│   │   │   ├── BusExpeditionController.java    # Bus management endpoints
+│   │   │   ├── FlightController.java           # Flight management endpoints
+│   │   │   └── UserController.java             # User management endpoints
+│   │   ├── custenum/                          # Custom enumerations
+│   │   │   ├── BusType.java                   # Bus type enumeration
+│   │   │   ├── Gender.java                    # Gender enumeration
+│   │   │   └── Role.java                      # User role enumeration
+│   │   ├── dto/                               # Data Transfer Objects
+│   │   │   ├── request/                       # Request DTOs
+│   │   │   └── response/                      # Response DTOs
+│   │   ├── exception/                         # Custom exceptions
+│   │   ├── model/                             # JPA entities
+│   │   │   ├── User.java                      # User entity
+│   │   │   ├── Flight.java                    # Flight entity
+│   │   │   ├── BusExpedition.java             # Bus expedition entity
+│   │   │   ├── RegistrationToken.java         # Email verification token
+│   │   │   └── PasswordResetToken.java        # Password reset token
+│   │   ├── repository/                        # Data access layer
+│   │   ├── security/                          # Security components
+│   │   │   ├── JwtService.java                # JWT token management
+│   │   │   ├── JwtTokenFilter.java            # JWT filter
+│   │   │   ├── TokenWhitelistService.java     # Token whitelist management
+│   │   │   └── CustomUserDetailsService.java # User details service
+│   │   ├── service/                           # Business logic layer
+│   │   └── specification/                     # JPA specifications for queries
+│   └── resources/
+│       ├── application.properties             # Application configuration
+│       ├── static/logo/                       # Brand assets
+│       └── templates/                         # Email HTML templates
+└── test/                                      # Test classes
+```
+
+## 🗄️ Database Schema
+
+The system uses PostgreSQL with the following main entities:
+
+### Core Entities
+
+#### User Entity
+```sql
+CREATE TABLE users (
+    id BIGSERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    phone_number VARCHAR(20),
+    gender VARCHAR(10),
+    birth_date DATE,
+    role VARCHAR(20) NOT NULL DEFAULT 'END_USER',
+    is_active BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP
+);
+```
+
+#### Flight Entity
+```sql
+CREATE TABLE flights (
+    id BIGSERIAL PRIMARY KEY,
+    flight_number VARCHAR(10) UNIQUE NOT NULL,
+    departure_airport VARCHAR(100) NOT NULL,
+    arrival_airport VARCHAR(100) NOT NULL,
+    departure_date_time TIMESTAMP NOT NULL,
+    arrival_date_time TIMESTAMP NOT NULL,
+    total_seats INTEGER NOT NULL,
+    available_seats INTEGER NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    airline VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP
+);
+```
+
+#### Bus Expedition Entity
+```sql
+CREATE TABLE bus_expeditions (
+    id BIGSERIAL PRIMARY KEY,
+    expedition_number VARCHAR(20) UNIQUE NOT NULL,
+    departure_terminal VARCHAR(100) NOT NULL,
+    arrival_terminal VARCHAR(100) NOT NULL,
+    departure_date_time TIMESTAMP NOT NULL,
+    arrival_date_time TIMESTAMP NOT NULL,
+    total_seats INTEGER NOT NULL,
+    available_seats INTEGER NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    bus_type VARCHAR(20) NOT NULL,
+    company_name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP
+);
+```
+
+#### Authentication Tokens
+```sql
+CREATE TABLE registration_tokens (
+    id BIGSERIAL PRIMARY KEY,
+    token VARCHAR(255) UNIQUE NOT NULL,
+    user_id BIGINT REFERENCES users(id),
+    expiry_date TIMESTAMP NOT NULL,
+    used BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE password_reset_tokens (
+    id BIGSERIAL PRIMARY KEY,
+    token VARCHAR(255) UNIQUE NOT NULL,
+    user_id BIGINT REFERENCES users(id),
+    expiry_date TIMESTAMP NOT NULL,
+    used BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## 🔐 Security Implementation
+
+### JWT Authentication
+The system implements a comprehensive JWT-based authentication system:
+
+- **Token Generation**: Uses HMAC SHA-256 algorithm with configurable secret key
+- **Token Expiration**: Configurable expiration time (default: 24 hours)
+- **Token Whitelist**: Maintains active token whitelist for secure session management
+- **Role-Based Access**: Two roles - `END_USER` and `SYSTEM_ADMIN`
+
+### Security Features
+- **Password Encryption**: BCrypt hashing for secure password storage
+- **CORS Configuration**: Configurable CORS settings for frontend integration
+- **Method-Level Security**: `@PreAuthorize` annotations for fine-grained access control
+- **Token Blacklisting**: Secure logout with token invalidation
+
+## 🌐 API Endpoints
+
+### Authentication Endpoints (`/api/auth`)
+
+| Method | Endpoint | Description | Access |
+|--------|----------|-------------|---------|
+| POST | `/register` | User registration with email verification | Public |
+| POST | `/login` | User authentication | Public |
+| POST | `/logout` | User logout with token invalidation | Authenticated |
+| GET | `/activate` | Email verification activation | Public |
+| POST | `/forgot-password` | Password reset request | Public |
+| POST | `/reset-password` | Password reset confirmation | Public |
+
+### User Management (`/api/users`)
+
+| Method | Endpoint | Description | Access |
+|--------|----------|-------------|---------|
+| GET | `/profile` | Get current user profile | Authenticated |
+| PUT | `/profile` | Update user profile | Authenticated |
+| DELETE | `/profile` | Delete user account (soft delete) | Authenticated |
+| GET | `/` | List all users (paginated) | Admin Only |
+| DELETE | `/{id}` | Delete user by ID | Admin Only |
+
+### Flight Management (`/api/flights`)
+
+| Method | Endpoint | Description | Access |
+|--------|----------|-------------|---------|
+| GET | `/` | Search flights with filters | Public |
+| GET | `/{id}` | Get flight details | Public |
+| POST | `/` | Create new flight | Admin Only |
+| PUT | `/{id}` | Update flight | Admin Only |
+| DELETE | `/{id}` | Delete flight | Admin Only |
+
+### Bus Expedition Management (`/api/bus-expeditions`)
+
+| Method | Endpoint | Description | Access |
+|--------|----------|-------------|---------|
+| GET | `/` | Search bus expeditions with filters | Public |
+| GET | `/{id}` | Get bus expedition details | Public |
+| POST | `/` | Create new bus expedition | Admin Only |
+| PUT | `/{id}` | Update bus expedition | Admin Only |
+| DELETE | `/{id}` | Delete bus expedition | Admin Only |
+
+## 🔍 Advanced Search & Filtering
+
+The system implements dynamic search capabilities using **JPA Specifications**:
+
+### Flight Search Parameters
+- **Route**: Departure and arrival airports
+- **Date Range**: Departure date filtering
+- **Price Range**: Minimum and maximum price
+- **Airline**: Specific airline filtering
+- **Availability**: Available seats filtering
+
+### Bus Expedition Search Parameters
+- **Route**: Departure and arrival terminals
+- **Date Range**: Departure date filtering
+- **Price Range**: Minimum and maximum price
+- **Bus Type**: Bus type filtering (STANDARD, VIP, SLEEPER)
+- **Company**: Bus company filtering
+
+### Pagination Support
+- **Page Size**: Configurable results per page
+- **Sorting**: Multiple field sorting support
+- **Total Count**: Total results metadata
+
+## 📧 Email Integration
+
+### Email Templates
+The system includes responsive HTML email templates:
+
+- **`activate.html`**: Account activation email
+- **`reset-password.html`**: Password reset email
+- **`login.html`**: Login notification email
+
+### Email Features
+- **SMTP Configuration**: Gmail SMTP integration
+- **Template Engine**: Thymeleaf for dynamic content
+- **Async Processing**: Non-blocking email sending
+- **Error Handling**: Comprehensive email delivery error handling
+
+## 🛠️ Configuration
+
+### Application Properties
+Key configuration parameters:
+
+```properties
+# Database Configuration
+spring.datasource.url=jdbc:postgresql://localhost:5432/biletal
+spring.datasource.username=${DB_USERNAME:biletal}
+spring.datasource.password=${DB_PASSWORD:password}
+
+# JWT Configuration
+jwt.secret=${JWT_SECRET:your-secret-key}
+jwt.expiration=${JWT_EXPIRATION:86400000}
+
+# Email Configuration
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=${EMAIL_USERNAME}
+spring.mail.password=${EMAIL_PASSWORD}
+
+# Server Configuration
+server.port=${PORT:8080}
+app.base-url=${BASE_URL:http://localhost:8080}
+```
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Java 17 or higher
+- PostgreSQL 12+
+- Maven 3.6+
+
+### Installation
+
+1. **Clone the repository:**
+```bash
+git clone <repository-url>
+cd biletalbackend
+```
+
+2. **Set up PostgreSQL database:**
+```sql
+CREATE DATABASE biletal;
+CREATE USER biletal WITH PASSWORD 'password';
+GRANT ALL PRIVILEGES ON DATABASE biletal TO biletal;
+```
+
+3. **Configure environment variables:**
+```bash
+export DB_USERNAME=biletal
+export DB_PASSWORD=password
+export JWT_SECRET=your-super-secret-jwt-key
+export EMAIL_USERNAME=your-email@gmail.com
+export EMAIL_PASSWORD=your-app-password
+```
+
+4. **Run the application:**
+```bash
+./mvnw spring-boot:run
+```
+
+5. **Access the API documentation:**
+   - Swagger UI: `http://localhost:8080/swagger-ui.html`
+   - API Docs: `http://localhost:8080/v3/api-docs`
+
+### Docker Setup (Optional)
+
+```bash
+# Start PostgreSQL with Docker Compose
+docker-compose up -d
+
+# Run the application
+./mvnw spring-boot:run
+```
+
+## 🧪 Testing
+
+### Run Tests
+```bash
+./mvnw test
+```
+
+### API Testing
+Use the included Swagger UI for interactive API testing, or import the OpenAPI specification into your preferred API testing tool.
+
+## 📚 API Documentation
+
+The project includes comprehensive API documentation using **Swagger/OpenAPI 3**:
+
+- **Interactive UI**: Full API exploration with request/response examples
+- **Schema Documentation**: Complete DTO and model documentation
+- **Authentication Testing**: Built-in JWT token testing support
+- **Error Responses**: Detailed error response documentation
+
+## 🏢 Business Logic
+
+### User Management
+- **Registration Flow**: Email verification with secure token system
+- **Profile Management**: Complete user profile CRUD operations
+- **Password Security**: Secure password reset with time-limited tokens
+
+### Transportation Management
+- **Multi-Modal Support**: Unified system for flights and bus expeditions
+- **Seat Management**: Real-time seat availability tracking
+- **Dynamic Pricing**: Flexible pricing structure support
+
+### Administrative Features
+- **User Administration**: Complete user management for system administrators
+- **Transportation Scheduling**: Full CRUD operations for flights and bus expeditions
+- **System Monitoring**: Comprehensive logging and monitoring capabilities
+
+## 🔧 Technical Implementation Details
+
+### Data Transfer Objects (DTOs)
+The system uses comprehensive DTOs for API communication:
+
+- **Request DTOs**: Input validation and data transformation
+- **Response DTOs**: Consistent API response structure
+- **Validation**: Bean validation with custom constraints
+
+### Exception Handling
+Global exception handling with:
+
+- **Custom Exceptions**: Business logic specific exceptions
+- **Global Handler**: Centralized exception handling
+- **Error Responses**: Standardized error response format
+
+### Soft Delete Pattern
+Implements soft delete across all entities:
+
+- **Logical Deletion**: `deleted_at` timestamp field
+- **Query Filtering**: Automatic exclusion of deleted records
+- **Data Recovery**: Ability to restore soft-deleted records
+
+## 🔮 Future Enhancements
+
+- **Ticket Booking**: Complete booking and payment integration
+- **Seat Selection**: Interactive seat selection interface
+- **Real-time Updates**: WebSocket integration for real-time updates
+- **Mobile API**: Mobile-optimized API endpoints
+- **Analytics**: Business intelligence and reporting features
+- **Multi-language**: Internationalization support
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
